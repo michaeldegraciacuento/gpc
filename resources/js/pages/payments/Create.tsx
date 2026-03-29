@@ -50,14 +50,7 @@ const memberFullName = (m: MemberOption) => {
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-const formatPeriod = (period: string): string => {
-    if (!period) return '';
-    if (period.length === 4) return period;
-    const [year, month] = period.split('-');
-    return `${MONTH_NAMES[parseInt(month) - 1]} ${year}`;
-};
-
-const generateMonthOptions = (currentYear: number) => {
+const generateMonthOptions = () => {
     const now = new Date();
     const options: { value: string; label: string }[] = [];
     // Past 12 months + current month + future 3 months = 16 months
@@ -96,7 +89,7 @@ export default function PaymentsCreate({ members, paymentTypes, selectedMemberId
     });
 
     const selectedPaymentType = paymentTypes.find((t) => String(t.id) === data.payment_type_id);
-    const monthOptions = generateMonthOptions(currentYear);
+    const monthOptions = generateMonthOptions();
     const yearOptions = generateYearOptions(currentYear);
 
     const handlePaymentTypeChange = (typeId: string) => {

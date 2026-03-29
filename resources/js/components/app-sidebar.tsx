@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, ClipboardList, CreditCard, FacebookIcon, FileText, Folder, LayoutGrid, Shield, Tags, UserCog, Users } from 'lucide-react';
+import { ClipboardList, CreditCard, FileText, LayoutGrid, Shield, Tags, UserCog, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -58,18 +58,6 @@ const footerNavItemsSettings: NavItem[] = [
     },
 ];
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Facebook',
-        href: 'https://www.facebook.com/p/Office-of-the-Senior-Citizens-Affairs-LGU-iligan-61562896852421/',
-        icon: FacebookIcon,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
-    },
-];
 
 export function AppSidebar() {
     return (

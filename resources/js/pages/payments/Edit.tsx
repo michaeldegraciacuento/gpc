@@ -60,14 +60,7 @@ const memberFullName = (m: MemberOption) => {
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-const formatPeriod = (period: string): string => {
-    if (!period) return '';
-    if (period.length === 4) return period;
-    const [year, month] = period.split('-');
-    return `${MONTH_NAMES[parseInt(month) - 1]} ${year}`;
-};
-
-const generateMonthOptions = (currentYear: number) => {
+const generateMonthOptions = () => {
     const now = new Date();
     const options: { value: string; label: string }[] = [];
     for (let i = -12; i <= 3; i++) {
@@ -89,7 +82,6 @@ const generateYearOptions = (currentYear: number) => {
 export default function PaymentsEdit({ payment, members, paymentTypes, memberPaidPeriods, memberPaidOneTime, currentYear }: Props) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [preview, setPreview] = useState<string | null>(payment.proof_image_url);
-    const [removing, setRemoving] = useState(false);
     const [memberOpen, setMemberOpen] = useState(false);
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -113,13 +105,12 @@ export default function PaymentsEdit({ payment, members, paymentTypes, memberPai
     });
 
     const selectedPaymentType = paymentTypes.find((t) => String(t.id) === data.payment_type_id);
-    const monthOptions = generateMonthOptions(currentYear);
+    const monthOptions = generateMonthOptions();
     const yearOptions = generateYearOptions(currentYear);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] || null;
         setData((prev) => ({ ...prev, proof_image: file, remove_proof_image: false }));
-        setRemoving(false);
         if (file) {
             const reader = new FileReader();
             reader.onload = (ev) => setPreview(ev.target?.result as string);
@@ -132,7 +123,6 @@ export default function PaymentsEdit({ payment, members, paymentTypes, memberPai
     const removeFile = () => {
         setData((prev) => ({ ...prev, proof_image: null, remove_proof_image: true }));
         setPreview(null);
-        setRemoving(true);
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
