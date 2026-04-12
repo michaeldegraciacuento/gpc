@@ -14,6 +14,7 @@ class Payment extends Model
         'member_id',
         'payment_type_id',
         'or_number',
+        'payment_receipt_number',
         'amount',
         'payment_date',
         'payment_method',

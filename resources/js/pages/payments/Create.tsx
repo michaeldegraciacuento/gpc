@@ -79,6 +79,7 @@ export default function PaymentsCreate({ members, paymentTypes, selectedMemberId
         member_id: selectedMemberId ? String(selectedMemberId) : '',
         payment_type_id: '',
         or_number: '',
+        payment_receipt_number: '',
         amount: '',
         payment_date: new Date().toISOString().split('T')[0],
         payment_method: 'cash',

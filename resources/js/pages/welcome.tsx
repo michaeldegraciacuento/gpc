@@ -164,6 +164,30 @@ export default function Welcome() {
                     </div>
                 </section>
 
+                {/* ── Sponsors / Brands ─────────────────────── */}
+                <section className="relative overflow-hidden bg-white py-12">
+                    <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+                        <FadeUp>
+                            <div className="text-center mb-6">
+                                <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-green-600">Our Sponsors & Partners</p>
+                                <h3 className="font-display text-2xl font-bold text-gray-900">Proudly Supported By</h3>
+                            </div>
+                            <div className="flex flex-wrap justify-center items-center gap-8">
+                                <a href="https://www.palakolphilippines.com/" target="_blank" rel="noopener noreferrer">
+                                    <img src="/image/palakol.avif" alt="Palakol" className="h-16 w-auto p-1" />
+                                </a>
+                                <a href="https://warpingpoint.com/" target="_blank" rel="noopener noreferrer">
+                                    <img src="/image/wp.jpg" alt="WP" className="h-16 w-auto p-1" />
+                                </a>
+                                <a href="https://www.facebook.com/mayoraprilrosedablio/" target="_blank" rel="noopener noreferrer">
+                                    <img src="/image/final-mayor.jpg" alt="Mayor" className="h-16 w-auto p-1" />
+                                </a>
+                            </div>
+                            <hr className="mt-8 border-green-300 w-100 mx-auto rounded-full" />
+                        </FadeUp>
+                    </div>
+                </section>
+
                 {/* ── About ──────────────────────────────── */}
                 <section id="about" className="relative overflow-hidden py-24 lg:py-32">
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -231,18 +255,32 @@ export default function Welcome() {
                             </div>
                         </FadeUp>
 
-                        <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="mt-16 grid gap-8 grid-cols-1 sm:grid-cols-2">
                             {[
-                                { icon: '🏓', title: 'Easy to Learn', desc: 'Pick up the basics in minutes. Our friendly members love helping newcomers get started.' },
-                                { icon: '🤝', title: 'Build Friendships', desc: 'Every game is a chance to connect. Our club is a tight-knit community of supportive players.' },
-                                { icon: '💪', title: 'Stay Active & Fit', desc: 'A full-body workout disguised as fun. Stay healthy while doing something you genuinely enjoy.' },
-                                { icon: '🏆', title: 'Friendly Competition', desc: 'Push your skills with organized matches, ladder play, and occasional tournaments.' },
-                                { icon: '👨‍👩‍👧‍👦', title: 'All Ages Welcome', desc: 'From teens to retirees — pickleball is the great equalizer. Everyone plays, everyone belongs.' },
-                                { icon: '🌴', title: 'Outdoor Fun', desc: 'Enjoy the beautiful Gitagum weather while playing on our well-maintained courts.' },
+                                {
+                                    icon: '/image/paddle.png',
+                                    title: 'Easy to Learn',
+                                    desc: 'Pick up the basics in minutes. Our friendly members love helping newcomers get started.'
+                                },
+                                {
+                                    icon: '/image/fit.png',
+                                    title: 'Stay Active & Fit',
+                                    desc: 'A full-body workout disguised as fun. Stay healthy while doing something you genuinely enjoy.'
+                                },
+                                {
+                                    icon: '/image/build.png',
+                                    title: 'Build Friendships',
+                                    desc: 'Every game is a chance to connect. Our club is a tight-knit community of supportive players.'
+                                },
+                                {
+                                    icon: '/image/compe.png',
+                                    title: 'Friendly Competition',
+                                    desc: 'Push your skills with organized matches, ladder play, and occasional tournaments.'
+                                },
                             ].map((item, i) => (
                                 <FadeUp key={item.title} delay={i * 100}>
                                     <div className="group relative rounded-2xl border border-gray-100 bg-white p-8 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-green-200">
-                                        <div className="mb-4 text-4xl">{item.icon}</div>
+                                        <img src={item.icon} alt="" className="mb-4 h-14 w-14 object-contain" />
                                         <h3 className="font-display text-xl font-bold text-gray-900 mb-2">{item.title}</h3>
                                         <p className="text-gray-600 leading-relaxed">{item.desc}</p>
                                         <div className="absolute bottom-0 left-0 h-1 w-0 rounded-b-2xl bg-gradient-to-r from-green-500 to-green-300 transition-all duration-300 group-hover:w-full" />
@@ -327,7 +365,7 @@ export default function Welcome() {
                     <div className="relative z-10 mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
                         <FadeUp>
                             <div className="inline-flex items-center gap-2 rounded-full border border-green-400/30 bg-green-500/10 px-4 py-1.5 text-sm font-medium text-green-300">
-                                🏓 No experience needed
+                                No experience needed
                             </div>
                         </FadeUp>
                         <FadeUp delay={100}>

@@ -169,20 +169,25 @@ export default function MembersCreate({ occupiedPositions }: Props) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="birthdate">Date of Birth</Label>
+                                    <Label htmlFor="birthdate">
+                                        Date of Birth <span className="text-destructive">*</span>
+                                    </Label>
                                     <Input
                                         id="birthdate"
                                         type="date"
                                         value={data.birthdate}
                                         onChange={(e) => setData('birthdate', e.target.value)}
                                         className={errors.birthdate ? 'border-destructive' : ''}
+                                        required
                                     />
                                     {errors.birthdate && <p className="text-destructive text-sm">{errors.birthdate}</p>}
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="gender">Gender</Label>
-                                    <Select value={data.gender} onValueChange={(v) => setData('gender', v)}>
+                                    <Label htmlFor="gender">
+                                        Gender <span className="text-destructive">*</span>
+                                    </Label>
+                                    <Select value={data.gender} onValueChange={(v) => setData('gender', v)} required>
                                         <SelectTrigger className={errors.gender ? 'border-destructive' : ''}>
                                             <SelectValue placeholder="Select gender" />
                                         </SelectTrigger>
@@ -195,9 +200,11 @@ export default function MembersCreate({ occupiedPositions }: Props) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="civil_status">Civil Status</Label>
-                                    <Select value={data.civil_status} onValueChange={(v) => setData('civil_status', v)}>
-                                        <SelectTrigger>
+                                    <Label htmlFor="civil_status">
+                                        Civil Status <span className="text-destructive">*</span>
+                                    </Label>
+                                    <Select value={data.civil_status} onValueChange={(v) => setData('civil_status', v)} required>
+                                        <SelectTrigger className={errors.civil_status ? 'border-destructive' : ''}>
                                             <SelectValue placeholder="Select status" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -208,6 +215,7 @@ export default function MembersCreate({ occupiedPositions }: Props) {
                                             <SelectItem value="divorced">Divorced</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                    {errors.civil_status && <p className="text-destructive text-sm">{errors.civil_status}</p>}
                                 </div>
                             </div>
                         </CardContent>
@@ -222,35 +230,48 @@ export default function MembersCreate({ occupiedPositions }: Props) {
                         <CardContent>
                             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="email">Email Address</Label>
+                                    <Label htmlFor="email">
+                                        Email Address <span className="text-destructive">*</span>
+                                    </Label>
                                     <Input
                                         id="email"
                                         type="email"
                                         value={data.email}
                                         onChange={(e) => setData('email', e.target.value)}
                                         className={errors.email ? 'border-destructive' : ''}
+                                        required
                                     />
                                     {errors.email && <p className="text-destructive text-sm">{errors.email}</p>}
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="phone">Phone Number</Label>
+                                    <Label htmlFor="phone">
+                                        Phone Number <span className="text-destructive">*</span>
+                                    </Label>
                                     <Input
                                         id="phone"
                                         value={data.phone}
                                         onChange={(e) => setData('phone', e.target.value)}
                                         placeholder="e.g. 09171234567"
+                                        className={errors.phone ? 'border-destructive' : ''}
+                                        required
                                     />
+                                    {errors.phone && <p className="text-destructive text-sm">{errors.phone}</p>}
                                 </div>
 
                                 <div className="space-y-2 md:col-span-2">
-                                    <Label htmlFor="address">Address</Label>
+                                    <Label htmlFor="address">
+                                        Address <span className="text-destructive">*</span>
+                                    </Label>
                                     <Textarea
                                         id="address"
                                         value={data.address}
                                         onChange={(e) => setData('address', e.target.value)}
                                         rows={2}
+                                        className={errors.address ? 'border-destructive' : ''}
+                                        required
                                     />
+                                    {errors.address && <p className="text-destructive text-sm">{errors.address}</p>}
                                 </div>
                             </div>
                         </CardContent>

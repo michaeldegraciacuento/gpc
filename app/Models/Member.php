@@ -11,7 +11,6 @@ class Member extends Model
     use HasFactory;
 
     protected $fillable = [
-        'member_id',
         'first_name',
         'middle_name',
         'last_name',
@@ -56,13 +55,9 @@ class Member extends Model
                 $year = date('y'); // e.g. "26"
                 $prefix = "GPC-{$initials}-{$year}";
 
-                // Find the highest sequence number for this prefix
-                $last = static::where('member_id', 'like', "{$prefix}%")
-                    ->orderByRaw("CAST(SUBSTRING(member_id, " . (strlen($prefix) + 1) . ") AS UNSIGNED) DESC")
-                    ->first();
-
-                $next = $last ? (int) substr($last->member_id, strlen($prefix)) + 1 : 1;
-                $member->member_id = $prefix . str_pad($next, 3, '0', STR_PAD_LEFT);
+                // Use the next available numeric id for the sequence
+                $nextId = (static::max('id') ?? 0) + 1;
+                $member->member_id = $prefix . str_pad($nextId, 3, '0', STR_PAD_LEFT);
             }
         });
     }

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { Check, ChevronsUpDown, Download, FileText, Shield, User } from 'lucide-react';
+import { Check, ChevronsUpDown, Download, FileText, ArrowLeftRight, Shield, User } from 'lucide-react';
 import { useState } from 'react';
 
 interface MemberOption {
@@ -71,6 +71,14 @@ export default function ReportsIndex({ members, paymentTypes, years, currentYear
     // Officials report state
     const [offLoading, setOffLoading] = useState(false);
 
+    // Transaction report state
+    const [txnPeriod, setTxnPeriod] = useState('monthly');
+    const [txnYear, setTxnYear] = useState(String(currentYear));
+    const [txnMonth, setTxnMonth] = useState(String(new Date().getMonth() + 1));
+    const [txnType, setTxnType] = useState('');
+    const [txnCategory, setTxnCategory] = useState('');
+    const [txnLoading, setTxnLoading] = useState(false);
+
     const downloadFinancial = () => {
         setFinLoading(true);
         const params = new URLSearchParams({
@@ -99,6 +107,32 @@ export default function ReportsIndex({ members, paymentTypes, years, currentYear
         setOffLoading(true);
         window.location.href = '/reports/officials';
         setTimeout(() => setOffLoading(false), 2000);
+    };
+
+    const TRANSACTION_CATEGORIES = [
+        { value: 'all', label: 'All Categories' },
+        { value: 'Incoming Funds', label: 'Incoming Funds' },
+        { value: 'Sponsor', label: 'Sponsor' },
+        { value: 'Outgoing Expenses', label: 'Outgoing Expenses' },
+    ];
+
+    const downloadTransaction = () => {
+        setTxnLoading(true);
+        const params = new URLSearchParams({
+            period: txnPeriod,
+            year: txnYear,
+        });
+        if (txnPeriod === 'monthly' && txnMonth) {
+            params.append('month', txnMonth);
+        }
+        if (txnType && txnType !== 'all') {
+            params.append('type', txnType);
+        }
+        if (txnCategory && txnCategory !== 'all') {
+            params.append('category', txnCategory);
+        }
+        window.location.href = `/reports/transaction?${params.toString()}`;
+        setTimeout(() => setTxnLoading(false), 2000);
     };
 
     return (
@@ -309,6 +343,108 @@ export default function ReportsIndex({ members, paymentTypes, years, currentYear
                         <Button onClick={downloadOfficials} disabled={offLoading} className="w-full">
                             <Download className="mr-2 h-4 w-4" />
                             {offLoading ? 'Generating...' : 'Download Officials & Members Directory'}
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                {/* Transaction Report Card */}
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                                <ArrowLeftRight className="h-5 w-5 text-purple-700 dark:text-purple-400" />
+                            </div>
+                            <div>
+                                <CardTitle>Transaction Report</CardTitle>
+                                <CardDescription>Download transaction records with income and expense breakdown</CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Report Period</Label>
+                            <Select value={txnPeriod} onValueChange={setTxnPeriod}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="monthly">Monthly</SelectItem>
+                                    <SelectItem value="annually">Annually</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Year</Label>
+                                <Select value={txnYear} onValueChange={setTxnYear}>
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {years.map((y) => (
+                                            <SelectItem key={y} value={String(y)}>
+                                                {y}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {txnPeriod === 'monthly' && (
+                                <div className="space-y-2">
+                                    <Label>Month</Label>
+                                    <Select value={txnMonth} onValueChange={setTxnMonth}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {MONTHS.map((m) => (
+                                                <SelectItem key={m.value} value={m.value}>
+                                                    {m.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Type (Optional)</Label>
+                                <Select value={txnType} onValueChange={setTxnType}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="All types" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Types</SelectItem>
+                                        <SelectItem value="in">Money In</SelectItem>
+                                        <SelectItem value="out">Money Out</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Category (Optional)</Label>
+                                <Select value={txnCategory} onValueChange={setTxnCategory}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="All categories" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {TRANSACTION_CATEGORIES.map((c) => (
+                                            <SelectItem key={c.value} value={c.value}>
+                                                {c.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        <Button onClick={downloadTransaction} disabled={txnLoading} className="w-full">
+                            <Download className="mr-2 h-4 w-4" />
+                            {txnLoading ? 'Generating...' : 'Download Transaction Report'}
                         </Button>
                     </CardContent>
                 </Card>

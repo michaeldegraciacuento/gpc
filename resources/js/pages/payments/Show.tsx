@@ -100,12 +100,20 @@ export default function PaymentsShow({ payment }: Props) {
                             {payment.payment_type.name} — {payment.member.full_name}
                         </p>
                     </div>
-                    <Link href={`/payments/${payment.id}/edit`}>
-                        <Button>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit Payment
-                        </Button>
-                    </Link>
+                    <div className="flex gap-2">
+                        <Link href={`/payments/${payment.id}/edit`}>
+                            <Button>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Payment
+                            </Button>
+                        </Link>
+                        <a href={`/payments/${payment.id}/receipt-pdf`} target="_blank" rel="noopener noreferrer">
+                            <Button variant="secondary">
+                                <Receipt className="mr-2 h-4 w-4" />
+                                Download Receipt
+                            </Button>
+                        </a>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -163,6 +171,15 @@ export default function PaymentsShow({ payment }: Props) {
                                     <div>
                                         <p className="text-sm font-medium">Official Receipt #</p>
                                         <p className="text-muted-foreground font-mono text-sm">{payment.or_number}</p>
+                                    </div>
+                                </div>
+                            )}
+                            {payment.payment_receipt_number && (
+                                <div className="flex items-start gap-3">
+                                    <Hash className="text-muted-foreground mt-0.5 h-4 w-4" />
+                                    <div>
+                                        <p className="text-sm font-medium">Payment Receipt #</p>
+                                        <p className="text-muted-foreground font-mono text-sm">{payment.payment_receipt_number}</p>
                                     </div>
                                 </div>
                             )}

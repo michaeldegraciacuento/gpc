@@ -5,6 +5,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentTypeController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -56,11 +57,13 @@ Route::middleware(['auth', 'verified', 'mfa.login'])->group(function () {
              ->name('payments.store');
     });
 
-    Route::middleware(['permission:payments.view'])->group(function () {
+     Route::middleware(['permission:payments.view'])->group(function () {
         Route::get('payments', [PaymentController::class, 'index'])
              ->name('payments.index');
         Route::get('payments/{payment}', [PaymentController::class, 'show'])
              ->name('payments.show');
+        Route::get('payments/{payment}/receipt-pdf', [PaymentController::class, 'receiptPdf'])
+             ->name('payments.receipt_pdf');
     });
 
     Route::middleware(['permission:payments.edit'])->group(function () {
@@ -103,6 +106,8 @@ Route::middleware(['auth', 'verified', 'mfa.login'])->group(function () {
              ->name('reports.member');
         Route::get('reports/officials', [ReportController::class, 'officials'])
              ->name('reports.officials');
+        Route::get('reports/transaction', [ReportController::class, 'transaction'])
+             ->name('reports.transaction');
     });
 
     // ─── Activity Logs ───────────────────────────────────────────────
@@ -110,5 +115,33 @@ Route::middleware(['auth', 'verified', 'mfa.login'])->group(function () {
     Route::middleware(['permission:members.view'])->group(function () {
         Route::get('activity-logs', [ActivityLogController::class, 'index'])
              ->name('activity-logs.index');
+    });
+
+    // ─── Transactions ────────────────────────────────────────────────
+
+    Route::middleware(['permission:payments.create'])->group(function () {
+        Route::get('transactions/create', [TransactionController::class, 'create'])
+             ->name('transactions.create');
+        Route::post('transactions', [TransactionController::class, 'store'])
+             ->name('transactions.store');
+    });
+
+    Route::middleware(['permission:payments.view'])->group(function () {
+        Route::get('transactions', [TransactionController::class, 'index'])
+             ->name('transactions.index');
+        Route::get('transactions/{transaction}', [TransactionController::class, 'show'])
+             ->name('transactions.show');
+    });
+
+    Route::middleware(['permission:payments.edit'])->group(function () {
+        Route::get('transactions/{transaction}/edit', [TransactionController::class, 'edit'])
+             ->name('transactions.edit');
+        Route::match(['put', 'patch'], 'transactions/{transaction}', [TransactionController::class, 'update'])
+             ->name('transactions.update');
+    });
+
+    Route::middleware(['permission:payments.delete'])->group(function () {
+        Route::delete('transactions/{transaction}', [TransactionController::class, 'destroy'])
+             ->name('transactions.destroy');
     });
 });

@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { ClipboardList, CreditCard, FileText, LayoutGrid, Shield, Tags, UserCog, Users } from 'lucide-react';
+import { ClipboardList, CreditCard, FileText, LayoutGrid, Shield, Tags, UserCog, Users, ArrowLeftRight } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -22,6 +22,11 @@ const mainNavItems: NavItem[] = [
         title: 'Payments',
         href: '/payments',
         icon: CreditCard,
+    },
+    {
+        title: 'Transactions',
+        href: '/transactions',
+        icon: ArrowLeftRight,
     },
     {
         title: 'Reports',

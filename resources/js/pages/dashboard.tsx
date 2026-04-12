@@ -1,10 +1,14 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
-import { CreditCard, DollarSign, TrendingUp, Users, Clock } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { ArrowDownRight, CreditCard, DollarSign, TrendingUp, Users, Wallet } from 'lucide-react';
+import { useCallback } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis } from 'recharts';
 
 interface Stats {
@@ -12,9 +16,16 @@ interface Stats {
     activeMembers: number;
     totalUsers: number;
     totalCollected: number;
-    collectedThisYear: number;
-    pendingAmount: number;
-    paymentsThisMonth: number;
+    collectedFiltered: number;
+    runningBalance: number;
+    outgoingExpenses: number;
+}
+
+interface Filters {
+    year: string;
+    month: string | null;
+    from: string | null;
+    to: string | null;
 }
 
 interface ChartMonthly {
@@ -44,6 +55,7 @@ interface Props {
     methodBreakdown: MethodBreakdown[];
     recentPayments: RecentPayment[];
     currentYear: number;
+    filters: Filters;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/dashboard' }];
@@ -66,7 +78,23 @@ const paymentMethodLabel = (method: string) => {
     return labels[method] || method;
 };
 
-export default function Dashboard({ stats, chartMonthly, methodBreakdown, recentPayments, currentYear }: Props) {
+const MONTHS = [
+    { value: 'all', label: 'All Months' },
+    { value: '01', label: 'January' },
+    { value: '02', label: 'February' },
+    { value: '03', label: 'March' },
+    { value: '04', label: 'April' },
+    { value: '05', label: 'May' },
+    { value: '06', label: 'June' },
+    { value: '07', label: 'July' },
+    { value: '08', label: 'August' },
+    { value: '09', label: 'September' },
+    { value: '10', label: 'October' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'December' },
+];
+
+export default function Dashboard({ stats, chartMonthly, methodBreakdown, recentPayments, currentYear, filters }: Props) {
     const pieChartConfig: ChartConfig = Object.fromEntries(
         methodBreakdown.map((m, i) => [
             m.method,
@@ -74,10 +102,114 @@ export default function Dashboard({ stats, chartMonthly, methodBreakdown, recent
         ]),
     );
 
+    const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+
+    const applyFilter = useCallback(
+        (key: string, value: string) => {
+            const params: Record<string, string> = {
+                year: filters.year,
+                ...(filters.month ? { month: filters.month } : {}),
+                ...(filters.from ? { from: filters.from } : {}),
+                ...(filters.to ? { to: filters.to } : {}),
+            };
+
+            if (value && value !== 'all') {
+                params[key] = value;
+            } else {
+                delete params[key];
+            }
+
+            // If date range is set, remove month (and vice-versa)
+            if (key === 'from' || key === 'to') {
+                delete params.month;
+            }
+            if (key === 'month') {
+                delete params.from;
+                delete params.to;
+            }
+
+            router.get('/dashboard', params, { preserveState: true, preserveScroll: true });
+        },
+        [filters],
+    );
+
+    const filterLabel = filters.month
+        ? `${MONTHS.find((m) => m.value === filters.month)?.label ?? ''} ${filters.year}`
+        : filters.from && filters.to
+          ? `${filters.from} — ${filters.to}`
+          : filters.year;
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
+                {/* Date Filters */}
+                <div>
+                    <CardContent className="flex flex-wrap items-end gap-4 pt-1">
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="filter-year">Year</Label>
+                            <Select
+                                value={filters.year}
+                                onValueChange={(v) => applyFilter('year', v)}
+                            >
+                                <SelectTrigger id="filter-year" className="w-[120px]">
+                                    <SelectValue placeholder="Year" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {years.map((y) => (
+                                        <SelectItem key={y} value={String(y)}>
+                                            {y}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="filter-month">Month</Label>
+                            <Select
+                                value={filters.month ?? 'all'}
+                                onValueChange={(v) => applyFilter('month', v)}
+                            >
+                                <SelectTrigger id="filter-month" className="w-[150px]">
+                                    <SelectValue placeholder="All Months" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {MONTHS.map((m) => (
+                                        <SelectItem key={m.value} value={m.value}>
+                                            {m.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="text-muted-foreground flex items-center pb-2 text-sm">or</div>
+
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="filter-from">From</Label>
+                            <Input
+                                id="filter-from"
+                                type="date"
+                                className="w-[160px]"
+                                value={filters.from ?? ''}
+                                onChange={(e) => applyFilter('from', e.target.value)}
+                            />
+                        </div>
+
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="filter-to">To</Label>
+                            <Input
+                                id="filter-to"
+                                type="date"
+                                className="w-[160px]"
+                                value={filters.to ?? ''}
+                                onChange={(e) => applyFilter('to', e.target.value)}
+                            />
+                        </div>
+                    </CardContent>
+                </div>
+
                 {/* Summary Cards */}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <Card>
@@ -95,11 +227,11 @@ export default function Dashboard({ stats, chartMonthly, methodBreakdown, recent
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Collected ({currentYear})</CardTitle>
+                            <CardTitle className="text-sm font-medium">Total Collected ({filterLabel})</CardTitle>
                             <DollarSign className="text-muted-foreground h-4 w-4" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{formatCurrency(stats.collectedThisYear)}</div>
+                            <div className="text-2xl font-bold">{formatCurrency(stats.collectedFiltered)}</div>
                             <p className="text-muted-foreground text-xs">
                                 {formatCurrency(stats.totalCollected)} all time
                             </p>
@@ -108,24 +240,24 @@ export default function Dashboard({ stats, chartMonthly, methodBreakdown, recent
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Pending Amount</CardTitle>
-                            <Clock className="text-muted-foreground h-4 w-4" />
+                            <CardTitle className="text-sm font-medium">Running Balance</CardTitle>
+                            <Wallet className="text-muted-foreground h-4 w-4" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{formatCurrency(stats.pendingAmount)}</div>
-                            <p className="text-muted-foreground text-xs">
-                                Awaiting confirmation
-                            </p>
+                            <div className={`text-2xl font-bold ${stats.runningBalance < 0 ? 'text-destructive' : ''}`}>
+                                {formatCurrency(stats.runningBalance)}
+                            </div>
+                            <p className="text-muted-foreground text-xs">Income minus expenses</p>
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Payments This Month</CardTitle>
-                            <CreditCard className="text-muted-foreground h-4 w-4" />
+                            <CardTitle className="text-sm font-medium">Outgoing Expenses</CardTitle>
+                            <ArrowDownRight className="text-muted-foreground h-4 w-4" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{stats.paymentsThisMonth}</div>
+                            <div className="text-2xl font-bold">{formatCurrency(stats.outgoingExpenses)}</div>
                             <p className="text-muted-foreground text-xs">
                                 {stats.totalUsers} system {stats.totalUsers === 1 ? 'user' : 'users'}
                             </p>
@@ -140,7 +272,7 @@ export default function Dashboard({ stats, chartMonthly, methodBreakdown, recent
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <TrendingUp className="h-4 w-4" />
-                                Monthly Collections ({currentYear})
+                                Monthly Collections ({filters.year})
                             </CardTitle>
                             <CardDescription>Total payments collected per month</CardDescription>
                         </CardHeader>
@@ -170,7 +302,7 @@ export default function Dashboard({ stats, chartMonthly, methodBreakdown, recent
                     {/* Payment Method Pie Chart */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Payment Methods ({currentYear})</CardTitle>
+                            <CardTitle>Payment Methods ({filterLabel})</CardTitle>
                             <CardDescription>Breakdown by payment method</CardDescription>
                         </CardHeader>
                         <CardContent>

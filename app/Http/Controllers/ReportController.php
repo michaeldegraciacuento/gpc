@@ -6,6 +6,7 @@ use App\Models\Member;
 use App\Models\Payment;
 use App\Models\PaymentType;
 use App\Models\PositionHistory;
+use App\Models\Transaction;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -68,7 +69,13 @@ class ReportController extends Controller
             $query->where('payment_type_id', $typeId);
         }
 
+
         $payments = $query->orderBy('payment_date', 'desc')->get();
+
+        // Find unpaid members (no payment for this period/type)
+        $allMembers = Member::orderBy('last_name')->get();
+        $paidMemberIds = $payments->pluck('member_id')->unique();
+        $unpaidMembers = $allMembers->whereNotIn('id', $paidMemberIds)->values();
 
         // Summary
         $paidPayments = $payments->where('status', 'paid');
@@ -100,9 +107,10 @@ class ReportController extends Controller
 
         $title = "Financial Report — {$periodLabel}";
 
+
         $pdf = Pdf::loadView('reports.financial', compact(
             'title', 'periodLabel', 'totalCollected', 'totalPayments', 'pendingAmount',
-            'byType', 'byMethod', 'payments'
+            'byType', 'byMethod', 'payments', 'unpaidMembers'
         ))->setPaper('a4', 'landscape');
 
         $filename = 'financial-report-' . strtolower(str_replace(' ', '-', $periodLabel)) . '.pdf';
@@ -181,5 +189,83 @@ class ReportController extends Controller
         ))->setPaper('a4', 'landscape');
 
         return $pdf->download('officials-members-directory.pdf');
+    }
+
+    /**
+     * Generate transaction report PDF.
+     */
+    public function transaction(Request $request)
+    {
+        $request->validate([
+            'period'   => 'required|in:monthly,annually',
+            'year'     => 'required|integer|min:2000|max:2100',
+            'month'    => 'nullable|integer|min:1|max:12',
+            'type'     => 'nullable|in:in,out',
+            'category' => 'nullable|string',
+        ]);
+
+        $period   = $request->input('period');
+        $year     = (int) $request->input('year');
+        $month    = $request->input('month') ? (int) $request->input('month') : null;
+        $typeFilter    = $request->input('type');
+        $categoryFilter = $request->input('category');
+
+        // Build query
+        $query = Transaction::with(['recorder', 'member', 'payment'])
+            ->whereYear('transaction_date', $year);
+
+        if ($period === 'monthly' && $month) {
+            $query->whereMonth('transaction_date', $month);
+        }
+
+        if ($typeFilter) {
+            $query->where('type', $typeFilter);
+        }
+
+        if ($categoryFilter && $categoryFilter !== 'all') {
+            $query->where('category', $categoryFilter);
+        }
+
+        $transactions = $query->orderBy('transaction_date', 'desc')->get();
+
+        // Summary
+        $totalIn  = (float) $transactions->where('type', 'in')->sum('amount');
+        $totalOut = (float) $transactions->where('type', 'out')->sum('amount');
+        $netBalance = $totalIn - $totalOut;
+        $totalCount = $transactions->count();
+
+        // By category
+        $byCategory = $transactions->groupBy('category')
+            ->map(fn ($group, $category) => [
+                'category' => $category,
+                'type'     => $group->first()->type,
+                'count'    => $group->count(),
+                'total'    => (float) $group->sum('amount'),
+            ])->values()->toArray();
+
+        // By type
+        $byType = $transactions->groupBy('type')
+            ->map(fn ($group, $type) => [
+                'type'  => $type === 'in' ? 'Money In' : 'Money Out',
+                'count' => $group->count(),
+                'total' => (float) $group->sum('amount'),
+            ])->values()->toArray();
+
+        // Period label
+        $months = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        $periodLabel = $period === 'monthly' && $month
+            ? "{$months[$month]} {$year}"
+            : "Year {$year}";
+
+        $title = "Transaction Report — {$periodLabel}";
+
+        $pdf = Pdf::loadView('reports.transaction', compact(
+            'title', 'periodLabel', 'totalIn', 'totalOut', 'netBalance',
+            'totalCount', 'byCategory', 'byType', 'transactions'
+        ))->setPaper('a4', 'landscape');
+
+        $filename = 'transaction-report-' . strtolower(str_replace(' ', '-', $periodLabel)) . '.pdf';
+
+        return $pdf->download($filename);
     }
 }

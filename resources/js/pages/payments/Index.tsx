@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { CreditCard, Edit, Eye, MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
+import { CreditCard, Edit, Eye, MoreHorizontal, Plus, Search, Trash2, QrCode } from 'lucide-react';
+import QRScanner from '@/components/QRScanner';
 import { useState } from 'react';
 
 interface PaymentType {
@@ -90,9 +91,14 @@ const formatPeriod = (period: string | null): string => {
     return `${MONTH_NAMES[parseInt(month) - 1]} ${year}`;
 };
 
-export default function PaymentsIndex({ payments, paymentTypes, filters }: Props) {
+// Accept members as a prop if available
+interface Member { id: number; member_id: string; }
+
+// @ts-ignore: Accept members prop if available
+export default function PaymentsIndex({ payments, paymentTypes, filters, members }: Props & { members?: Member[] }) {
     const [search, setSearch] = useState(filters.search || '');
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [qrOpen, setQROpen] = useState(false);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -119,13 +125,31 @@ export default function PaymentsIndex({ payments, paymentTypes, filters }: Props
                         <h1 className="text-3xl font-bold tracking-tight">Payments</h1>
                         <p className="text-muted-foreground">Track and manage all member payments</p>
                     </div>
-                    <Link href="/payments/create">
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Record Payment
+                    <div className="flex gap-2">
+                        <Link href="/payments/create">
+                            <Button>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Record Payment
+                            </Button>
+                        </Link>
+                        <Button variant="outline" onClick={() => setQROpen(true)} title="Scan Member QR">
+                            <QrCode className="mr-2 h-4 w-4" />
+                            Scan QR
                         </Button>
-                    </Link>
+                    </div>
                 </div>
+                {qrOpen && (
+                    <QRScanner
+                        onScan={(memberId) => {
+                            setQROpen(false);
+                            if (memberId) {
+                                window.location.href = `/payments/create?member_id=${encodeURIComponent(memberId)}`;
+                            }
+                        }}
+                        onClose={() => setQROpen(false)}
+                        members={members || []}
+                    />
+                )}
 
                 <Card>
                     <CardHeader>

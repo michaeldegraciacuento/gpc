@@ -4,16 +4,37 @@ namespace App\Http\Controllers;
 
 use App\Models\Member;
 use App\Models\Payment;
+use App\Models\Transaction;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __invoke(): Response
+    public function __invoke(Request $request): Response
     {
         $currentYear = now()->year;
+
+        // ── Filter parameters ─────────────────────────────────
+        $filterYear  = $request->input('year', (string) $currentYear);
+        $filterMonth = $request->input('month');      // e.g. "01".."12"
+        $filterFrom  = $request->input('from');        // date string
+        $filterTo    = $request->input('to');           // date string
+
+        // Helper: apply date filters to a query on a given date column
+        $applyDateFilters = function ($query, string $dateCol = 'payment_date') use ($filterYear, $filterMonth, $filterFrom, $filterTo) {
+            if ($filterFrom && $filterTo) {
+                $query->whereBetween($dateCol, [$filterFrom, $filterTo]);
+            } elseif ($filterMonth && $filterYear) {
+                $query->whereYear($dateCol, $filterYear)
+                      ->whereMonth($dateCol, $filterMonth);
+            } elseif ($filterYear) {
+                $query->whereYear($dateCol, $filterYear);
+            }
+            return $query;
+        };
 
         // Summary cards
         $totalMembers  = Member::count();
@@ -21,19 +42,27 @@ class DashboardController extends Controller
         $totalUsers    = User::count();
 
         $totalCollected = (float) Payment::where('status', 'paid')->sum('amount');
-        $collectedThisYear = (float) Payment::where('status', 'paid')
-            ->whereYear('payment_date', $currentYear)
-            ->sum('amount');
-        $pendingAmount = (float) Payment::where('status', 'pending')->sum('amount');
 
-        $paymentsThisMonth = Payment::where('status', 'paid')
-            ->whereYear('payment_date', $currentYear)
-            ->whereMonth('payment_date', now()->month)
-            ->count();
+        $collectedFiltered = (float) $applyDateFilters(
+            Payment::where('status', 'paid'),
+            'payment_date'
+        )->sum('amount');
 
-        // Monthly collection chart data for current year (Jan - Dec)
+        // Running balance from transactions (all-time)
+        $totalIn  = (float) Transaction::where('type', 'in')->sum('amount');
+        $totalOut = (float) Transaction::where('type', 'out')->sum('amount');
+        $runningBalance = $totalIn - $totalOut;
+
+        // Outgoing expenses (filtered period)
+        $outgoingExpenses = (float) $applyDateFilters(
+            Transaction::where('type', 'out'),
+            'transaction_date'
+        )->sum('amount');
+
+        // Monthly collection chart data (for filterYear)
+        $chartYear = (int) $filterYear;
         $monthlyCollections = Payment::where('status', 'paid')
-            ->whereYear('payment_date', $currentYear)
+            ->whereYear('payment_date', $chartYear)
             ->selectRaw("MONTH(payment_date) as month, SUM(amount) as total")
             ->groupBy(DB::raw('MONTH(payment_date)'))
             ->orderBy('month')
@@ -50,8 +79,9 @@ class DashboardController extends Controller
         }
 
         // Payment method breakdown (pie chart)
-        $methodBreakdown = Payment::where('status', 'paid')
-            ->whereYear('payment_date', $currentYear)
+        $methodQuery = Payment::where('status', 'paid');
+        $applyDateFilters($methodQuery);
+        $methodBreakdown = $methodQuery
             ->selectRaw("payment_method, COUNT(*) as count, SUM(amount) as total")
             ->groupBy('payment_method')
             ->get()
@@ -90,14 +120,20 @@ class DashboardController extends Controller
                 'activeMembers'     => $activeMembers,
                 'totalUsers'        => $totalUsers,
                 'totalCollected'    => $totalCollected,
-                'collectedThisYear' => $collectedThisYear,
-                'pendingAmount'     => $pendingAmount,
-                'paymentsThisMonth' => $paymentsThisMonth,
+                'collectedFiltered' => $collectedFiltered,
+                'runningBalance'    => $runningBalance,
+                'outgoingExpenses'  => $outgoingExpenses,
             ],
             'chartMonthly'    => $chartMonthly,
             'methodBreakdown' => $methodBreakdown,
             'recentPayments'  => $recentPayments,
             'currentYear'     => $currentYear,
+            'filters'         => [
+                'year'  => $filterYear,
+                'month' => $filterMonth,
+                'from'  => $filterFrom,
+                'to'    => $filterTo,
+            ],
         ]);
     }
 }

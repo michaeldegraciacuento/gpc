@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Member;
 use App\Models\Payment;
 use App\Models\PaymentType;
+use App\Models\Transaction;
 use App\Traits\LogsActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PaymentController extends Controller
 {
@@ -101,6 +103,7 @@ class PaymentController extends Controller
             'member_id'       => 'required|exists:members,id',
             'payment_type_id' => 'required|exists:payment_types,id',
             'or_number'       => 'nullable|string|max:50',
+            'payment_receipt_number' => 'nullable|string|max:50|unique:payments,payment_receipt_number',
             'amount'          => 'required|numeric|min:0.01',
             'payment_date'    => 'required|date',
             'payment_method'  => 'required|in:cash,gcash,bank_transfer',
@@ -109,6 +112,14 @@ class PaymentController extends Controller
             'billing_period'  => 'nullable|string|max:7',
             'proof_image'     => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
+
+        // Auto-generate payment_receipt_number if not provided
+        if (empty($validated['payment_receipt_number'])) {
+            $latest = Payment::orderByDesc('id')->first();
+            $nextId = $latest ? $latest->id + 1 : 1;
+            $year = now()->format('Y');
+            $validated['payment_receipt_number'] = 'PR-' . $year . str_pad($nextId, 5, '0', STR_PAD_LEFT);
+        }
 
         if ($request->hasFile('proof_image')) {
             $validated['proof_image'] = $request->file('proof_image')->store('payment-proofs', 'public');
@@ -120,6 +131,19 @@ class PaymentController extends Controller
 
         $member = Member::find($validated['member_id']);
         $type = PaymentType::find($validated['payment_type_id']);
+
+        // Auto-create a corresponding Transaction (Money IN)
+        Transaction::create([
+            'type'             => 'in',
+            'category'         => 'Incoming Funds',
+            'description'      => $type->name . ' - ' . $member->full_name,
+            'amount'           => $validated['amount'],
+            'transaction_date' => $validated['payment_date'],
+            'payment_id'       => $payment->id,
+            'member_id'        => $member->id,
+            'recorded_by'      => $request->user()->id,
+        ]);
+
         $this->logActivity('created', $payment, "Recorded {$type->name} payment of ₱" . number_format($validated['amount'], 2) . " for {$member->full_name}");
 
         return redirect()->route('payments.index')
@@ -133,6 +157,17 @@ class PaymentController extends Controller
         return Inertia::render('payments/Show', [
             'payment' => $payment,
         ]);
+    }
+
+    /**
+     * Download PDF receipt for a payment.
+     */
+    public function receiptPdf(Payment $payment)
+    {
+        $payment->load(['member', 'paymentType', 'recorder']);
+        $pdf = Pdf::loadView('reports.payment_receipt', compact('payment'))->setPaper([0, 0, 165, 275], 'portrait');
+        $filename = 'payment-receipt-' . ($payment->or_number ?? $payment->id) . '.pdf';
+        return $pdf->download($filename);
     }
 
     public function edit(Payment $payment): Response
@@ -187,6 +222,7 @@ class PaymentController extends Controller
             'member_id'       => 'required|exists:members,id',
             'payment_type_id' => 'required|exists:payment_types,id',
             'or_number'       => 'nullable|string|max:50',
+            'payment_receipt_number' => 'required|string|max:50|unique:payments,payment_receipt_number,' . $payment->id,
             'amount'          => 'required|numeric|min:0.01',
             'payment_date'    => 'required|date',
             'payment_method'  => 'required|in:cash,gcash,bank_transfer',
