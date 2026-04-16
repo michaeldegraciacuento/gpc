@@ -106,7 +106,7 @@ export default function PaymentsCreate({ members, paymentTypes, selectedMemberId
             ...prev,
             payment_type_id: typeId,
             billing_period: period,
-            amount: pt?.amount && !prev.amount ? pt.amount : prev.amount,
+            amount: pt?.amount ? pt.amount : prev.amount,
         }));
     };
 
@@ -310,9 +310,13 @@ export default function PaymentsCreate({ members, paymentTypes, selectedMemberId
                                         min="0.01"
                                         value={data.amount}
                                         onChange={(e) => setData('amount', e.target.value)}
-                                        className={errors.amount ? 'border-destructive' : ''}
+                                        className={`${errors.amount ? 'border-destructive' : ''} ${selectedPaymentType?.amount ? 'bg-muted' : ''}`}
                                         placeholder="0.00"
+                                        disabled={!!selectedPaymentType?.amount}
                                     />
+                                    {selectedPaymentType?.amount && (
+                                        <p className="text-muted-foreground text-xs">Amount is set by the payment type.</p>
+                                    )}
                                     {errors.amount && <p className="text-destructive text-sm">{errors.amount}</p>}
                                 </div>
 

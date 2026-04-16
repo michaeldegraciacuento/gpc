@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Payment;
 use App\Models\Transaction;
 use App\Traits\LogsActivity;
 use Illuminate\Http\RedirectResponse;
@@ -161,6 +162,30 @@ class TransactionController extends Controller
         $transactionCopy = $transaction->replicate();
         $transactionCopy->id = $transaction->id;
 
+        // Delete linked payment
+        if ($transaction->payment_id) {
+            $linkedPayment = Payment::with(['member', 'paymentType'])->find($transaction->payment_id);
+            if ($linkedPayment) {
+                $memberName = $linkedPayment->member ? $linkedPayment->member->full_name : 'Unknown';
+                $typeName = $linkedPayment->paymentType ? $linkedPayment->paymentType->name : 'Unknown';
+                $amount = '₱' . number_format($linkedPayment->amount, 2);
+                $period = $linkedPayment->billing_period
+                    ? (strlen($linkedPayment->billing_period) === 4 ? $linkedPayment->billing_period : date('F Y', strtotime($linkedPayment->billing_period . '-01')))
+                    : '';
+
+                $paymentDesc = "Auto-deleted payment #{$linkedPayment->id} for {$memberName} — {$typeName} {$amount}"
+                    . ($period ? " ({$period})" : '')
+                    . " (linked transaction #{$transaction->id} was deleted)";
+
+                $this->logActivity('deleted', $linkedPayment, $paymentDesc);
+
+                if ($linkedPayment->proof_image) {
+                    Storage::disk('public')->delete($linkedPayment->proof_image);
+                }
+                $linkedPayment->delete();
+            }
+        }
+
         if ($transaction->receipt_image) {
             Storage::disk('public')->delete($transaction->receipt_image);
         }
@@ -170,6 +195,6 @@ class TransactionController extends Controller
         $this->logActivity('transaction_deleted', $transactionCopy, $desc);
 
         return redirect()->route('transactions.index')
-            ->with('success', 'Transaction deleted successfully.');
+            ->with('success', 'Transaction and linked payment deleted successfully.');
     }
 }

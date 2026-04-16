@@ -113,6 +113,38 @@ class PaymentController extends Controller
             'proof_image'     => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
+        // Check for duplicate payment (same member + type + billing period)
+        $paymentType = PaymentType::findOrFail($validated['payment_type_id']);
+
+        if ($paymentType->billing_cycle === 'one_time') {
+            $exists = Payment::where('member_id', $validated['member_id'])
+                ->where('payment_type_id', $validated['payment_type_id'])
+                ->where('status', 'paid')
+                ->exists();
+
+            if ($exists) {
+                return back()->withErrors(['payment_type_id' => "This member has already paid for {$paymentType->name}."])->withInput();
+            }
+        } elseif (in_array($paymentType->billing_cycle, ['monthly', 'yearly']) && !empty($validated['billing_period'])) {
+            $exists = Payment::where('member_id', $validated['member_id'])
+                ->where('payment_type_id', $validated['payment_type_id'])
+                ->where('billing_period', $validated['billing_period'])
+                ->where('status', 'paid')
+                ->exists();
+
+            if ($exists) {
+                $periodLabel = $paymentType->billing_cycle === 'monthly'
+                    ? date('F Y', strtotime($validated['billing_period'] . '-01'))
+                    : $validated['billing_period'];
+                return back()->withErrors(['billing_period' => "This member has already paid {$paymentType->name} for {$periodLabel}."])->withInput();
+            }
+        }
+
+        // Force amount from payment type
+        if ($paymentType->amount) {
+            $validated['amount'] = $paymentType->amount;
+        }
+
         // Auto-generate payment_receipt_number if not provided
         if (empty($validated['payment_receipt_number'])) {
             $latest = Payment::orderByDesc('id')->first();
@@ -271,8 +303,32 @@ class PaymentController extends Controller
 
     public function destroy(Payment $payment): RedirectResponse
     {
+        $payment->load(['member', 'paymentType']);
         $member = $payment->member;
-        $this->logActivity('deleted', $payment, "Deleted payment #{$payment->id}" . ($member ? " for {$member->full_name}" : ''));
+        $typeName = $payment->paymentType ? $payment->paymentType->name : 'Unknown';
+        $amount = '₱' . number_format($payment->amount, 2);
+        $period = $payment->billing_period
+            ? (strlen($payment->billing_period) === 4 ? $payment->billing_period : date('F Y', strtotime($payment->billing_period . '-01')))
+            : '';
+
+        $desc = "Deleted payment #{$payment->id}"
+            . ($member ? " for {$member->full_name}" : '')
+            . " — {$typeName} {$amount}"
+            . ($period ? " ({$period})" : '');
+
+        $this->logActivity('deleted', $payment, $desc);
+
+        // Delete linked transaction
+        $linkedTransaction = Transaction::where('payment_id', $payment->id)->first();
+        if ($linkedTransaction) {
+            $typeLabel = $linkedTransaction->type === 'in' ? 'Money IN' : 'Money OUT';
+            $this->logActivity('transaction_deleted', $linkedTransaction, "Auto-deleted {$typeLabel} transaction #{$linkedTransaction->id} (linked payment #{$payment->id} was deleted)");
+
+            if ($linkedTransaction->receipt_image) {
+                Storage::disk('public')->delete($linkedTransaction->receipt_image);
+            }
+            $linkedTransaction->delete();
+        }
 
         if ($payment->proof_image) {
             Storage::disk('public')->delete($payment->proof_image);
@@ -281,6 +337,6 @@ class PaymentController extends Controller
         $payment->delete();
 
         return redirect()->route('payments.index')
-            ->with('success', 'Payment deleted successfully.');
+            ->with('success', 'Payment and linked transaction deleted successfully.');
     }
 }
