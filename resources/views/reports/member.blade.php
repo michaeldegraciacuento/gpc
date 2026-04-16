@@ -70,6 +70,12 @@
                 <td class="label">Pending Amount:</td>
                 <td class="value">₱{{ number_format($pendingAmount, 2) }}</td>
             </tr>
+            <tr>
+                <td class="label">Outstanding Dues:</td>
+                <td class="value">{{ count($outstandingDues) }} item(s)</td>
+                <td class="label">Outstanding Amount:</td>
+                <td class="value" style="color: {{ $totalOutstanding > 0 ? '#991b1b' : '#166534' }};">₱{{ number_format($totalOutstanding, 2) }}</td>
+            </tr>
         </table>
     </div>
 
@@ -88,6 +94,38 @@
             </tr>
             @endforeach
         </tbody>
+    </table>
+    @endif
+
+    @if(count($outstandingDues) > 0)
+    <h2>Outstanding Dues</h2>
+    <table class="data">
+        <thead>
+            <tr>
+                <th>Due Type</th>
+                <th>Billing Cycle</th>
+                <th>Period</th>
+                <th class="text-center">Status</th>
+                <th class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($outstandingDues as $due)
+            <tr>
+                <td>{{ $due['payment_type_name'] }}</td>
+                <td>{{ $due['billing_cycle'] }}</td>
+                <td>{{ $due['billing_period_label'] }}</td>
+                <td class="text-center"><span class="badge badge-cancelled">Unpaid</span></td>
+                <td class="text-right">₱{{ number_format($due['amount'], 2) }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+        <tfoot>
+            <tr style="font-weight: bold; border-top: 2px solid #166534;">
+                <td colspan="4" class="text-right" style="padding-top: 8px;">Total Outstanding:</td>
+                <td class="text-right" style="padding-top: 8px; color: #991b1b;">₱{{ number_format($totalOutstanding, 2) }}</td>
+            </tr>
+        </tfoot>
     </table>
     @endif
 

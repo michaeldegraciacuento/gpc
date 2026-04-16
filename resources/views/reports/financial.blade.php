@@ -106,19 +106,6 @@
                 <td class="text-right">₱{{ number_format($p->amount, 2) }}</td>
             </tr>
             @endforeach
-            @if(isset($unpaidMembers) && count($unpaidMembers) > 0)
-                @foreach($unpaidMembers as $member)
-                <tr>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>{{ $member->member_id }} — {{ $member->full_name }}</td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td class="text-center"><span class="badge badge-pending">Unpaid</span></td>
-                    <td class="text-right">—</td>
-                </tr>
-                @endforeach
-            @endif
         </tbody>
     </table>
     @endif

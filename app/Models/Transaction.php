@@ -16,6 +16,7 @@ class Transaction extends Model
         'description',
         'amount',
         'transaction_date',
+        'receipt_image',
         'payment_id',
         'member_id',
         'recorded_by',

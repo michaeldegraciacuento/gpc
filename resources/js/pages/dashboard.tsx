@@ -145,14 +145,14 @@ export default function Dashboard({ stats, chartMonthly, methodBreakdown, recent
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
                 {/* Date Filters */}
                 <div>
-                    <CardContent className="flex flex-wrap items-end gap-4 pt-1">
-                        <div className="grid gap-1.5">
+                    <CardContent className="flex flex-wrap items-end gap-3 pt-1 sm:gap-4">
+                        <div className="grid w-[calc(50%-6px)] gap-1.5 sm:w-auto">
                             <Label htmlFor="filter-year">Year</Label>
                             <Select
                                 value={filters.year}
                                 onValueChange={(v) => applyFilter('year', v)}
                             >
-                                <SelectTrigger id="filter-year" className="w-[120px]">
+                                <SelectTrigger id="filter-year" className="w-full sm:w-[120px]">
                                     <SelectValue placeholder="Year" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -165,13 +165,13 @@ export default function Dashboard({ stats, chartMonthly, methodBreakdown, recent
                             </Select>
                         </div>
 
-                        <div className="grid gap-1.5">
+                        <div className="grid w-[calc(50%-6px)] gap-1.5 sm:w-auto">
                             <Label htmlFor="filter-month">Month</Label>
                             <Select
                                 value={filters.month ?? 'all'}
                                 onValueChange={(v) => applyFilter('month', v)}
                             >
-                                <SelectTrigger id="filter-month" className="w-[150px]">
+                                <SelectTrigger id="filter-month" className="w-full sm:w-[150px]">
                                     <SelectValue placeholder="All Months" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -184,25 +184,25 @@ export default function Dashboard({ stats, chartMonthly, methodBreakdown, recent
                             </Select>
                         </div>
 
-                        <div className="text-muted-foreground flex items-center pb-2 text-sm">or</div>
+                        <div className="text-muted-foreground hidden items-center pb-2 text-sm sm:flex">or</div>
 
-                        <div className="grid gap-1.5">
+                        <div className="grid w-[calc(50%-6px)] gap-1.5 sm:w-auto">
                             <Label htmlFor="filter-from">From</Label>
                             <Input
                                 id="filter-from"
                                 type="date"
-                                className="w-[160px]"
+                                className="w-full sm:w-[160px]"
                                 value={filters.from ?? ''}
                                 onChange={(e) => applyFilter('from', e.target.value)}
                             />
                         </div>
 
-                        <div className="grid gap-1.5">
+                        <div className="grid w-[calc(50%-6px)] gap-1.5 sm:w-auto">
                             <Label htmlFor="filter-to">To</Label>
                             <Input
                                 id="filter-to"
                                 type="date"
-                                className="w-[160px]"
+                                className="w-full sm:w-[160px]"
                                 value={filters.to ?? ''}
                                 onChange={(e) => applyFilter('to', e.target.value)}
                             />
@@ -211,14 +211,14 @@ export default function Dashboard({ stats, chartMonthly, methodBreakdown, recent
                 </div>
 
                 {/* Summary Cards */}
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Members</CardTitle>
-                            <Users className="text-muted-foreground h-4 w-4" />
+                            <CardTitle className="text-xs font-medium sm:text-sm">Total Members</CardTitle>
+                            <Users className="text-muted-foreground h-4 w-4 shrink-0" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{stats.totalMembers}</div>
+                            <div className="text-xl font-bold sm:text-2xl">{stats.totalMembers}</div>
                             <p className="text-muted-foreground text-xs">
                                 {stats.activeMembers} active
                             </p>
@@ -227,12 +227,12 @@ export default function Dashboard({ stats, chartMonthly, methodBreakdown, recent
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Collected ({filterLabel})</CardTitle>
-                            <DollarSign className="text-muted-foreground h-4 w-4" />
+                            <CardTitle className="text-xs font-medium sm:text-sm">Collected ({filterLabel})</CardTitle>
+                            <DollarSign className="text-muted-foreground h-4 w-4 shrink-0" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{formatCurrency(stats.collectedFiltered)}</div>
-                            <p className="text-muted-foreground text-xs">
+                            <div className="text-xl font-bold sm:text-2xl">{formatCurrency(stats.collectedFiltered)}</div>
+                            <p className="text-muted-foreground hidden text-xs sm:block">
                                 {formatCurrency(stats.totalCollected)} all time
                             </p>
                         </CardContent>
@@ -240,25 +240,25 @@ export default function Dashboard({ stats, chartMonthly, methodBreakdown, recent
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Running Balance</CardTitle>
-                            <Wallet className="text-muted-foreground h-4 w-4" />
+                            <CardTitle className="text-xs font-medium sm:text-sm">Running Balance</CardTitle>
+                            <Wallet className="text-muted-foreground h-4 w-4 shrink-0" />
                         </CardHeader>
                         <CardContent>
-                            <div className={`text-2xl font-bold ${stats.runningBalance < 0 ? 'text-destructive' : ''}`}>
+                            <div className={`text-xl font-bold sm:text-2xl ${stats.runningBalance < 0 ? 'text-destructive' : ''}`}>
                                 {formatCurrency(stats.runningBalance)}
                             </div>
-                            <p className="text-muted-foreground text-xs">Income minus expenses</p>
+                            <p className="text-muted-foreground hidden text-xs sm:block">Income minus expenses</p>
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Outgoing Expenses</CardTitle>
-                            <ArrowDownRight className="text-muted-foreground h-4 w-4" />
+                            <CardTitle className="text-xs font-medium sm:text-sm">Outgoing Expenses</CardTitle>
+                            <ArrowDownRight className="text-muted-foreground h-4 w-4 shrink-0" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{formatCurrency(stats.outgoingExpenses)}</div>
-                            <p className="text-muted-foreground text-xs">
+                            <div className="text-xl font-bold sm:text-2xl">{formatCurrency(stats.outgoingExpenses)}</div>
+                            <p className="text-muted-foreground hidden text-xs sm:block">
                                 {stats.totalUsers} system {stats.totalUsers === 1 ? 'user' : 'users'}
                             </p>
                         </CardContent>
@@ -270,21 +270,23 @@ export default function Dashboard({ stats, chartMonthly, methodBreakdown, recent
                     {/* Monthly Collections Bar Chart */}
                     <Card className="lg:col-span-2">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
+                            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                                 <TrendingUp className="h-4 w-4" />
                                 Monthly Collections ({filters.year})
                             </CardTitle>
                             <CardDescription>Total payments collected per month</CardDescription>
                         </CardHeader>
-                        <CardContent>
-                            <ChartContainer config={barChartConfig} className="h-[300px] w-full">
+                        <CardContent className="-ml-4 sm:ml-0">
+                            <ChartContainer config={barChartConfig} className="h-[220px] w-full sm:h-[300px]">
                                 <BarChart data={chartMonthly} accessibilityLayer>
                                     <CartesianGrid vertical={false} />
-                                    <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
+                                    <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} fontSize={12} />
                                     <YAxis
                                         tickLine={false}
                                         axisLine={false}
                                         tickFormatter={(value) => `₱${(value / 1000).toFixed(0)}k`}
+                                        fontSize={12}
+                                        width={45}
                                     />
                                     <ChartTooltip
                                         content={
@@ -347,7 +349,7 @@ export default function Dashboard({ stats, chartMonthly, methodBreakdown, recent
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
-                            <CardTitle>Recent Payments</CardTitle>
+                            <CardTitle className="text-base sm:text-lg">Recent Payments</CardTitle>
                             <CardDescription>Latest 5 recorded payments</CardDescription>
                         </div>
                         <Link href="/payments" className="text-primary text-sm hover:underline">
@@ -356,31 +358,36 @@ export default function Dashboard({ stats, chartMonthly, methodBreakdown, recent
                     </CardHeader>
                     <CardContent>
                         {recentPayments.length > 0 ? (
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Member</TableHead>
-                                        <TableHead>Type</TableHead>
-                                        <TableHead>Amount</TableHead>
-                                        <TableHead className="hidden md:table-cell">Method</TableHead>
-                                        <TableHead>Date</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {recentPayments.map((p) => (
-                                        <TableRow key={p.id}>
-                                            <TableCell>
-                                                <div className="font-medium">{p.member_name}</div>
-                                                <div className="text-muted-foreground font-mono text-xs">{p.member_id}</div>
-                                            </TableCell>
-                                            <TableCell>{p.type}</TableCell>
-                                            <TableCell className="font-mono font-medium">{formatCurrency(p.amount)}</TableCell>
-                                            <TableCell className="hidden md:table-cell">{paymentMethodLabel(p.method)}</TableCell>
-                                            <TableCell>{new Date(p.payment_date).toLocaleDateString()}</TableCell>
+                            <div className="-mx-6 overflow-x-auto px-6 sm:mx-0 sm:px-0">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Member</TableHead>
+                                            <TableHead className="hidden sm:table-cell">Type</TableHead>
+                                            <TableHead>Amount</TableHead>
+                                            <TableHead className="hidden md:table-cell">Method</TableHead>
+                                            <TableHead className="hidden sm:table-cell">Date</TableHead>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {recentPayments.map((p) => (
+                                            <TableRow key={p.id}>
+                                                <TableCell>
+                                                    <div className="font-medium">{p.member_name}</div>
+                                                    <div className="text-muted-foreground font-mono text-xs">{p.member_id}</div>
+                                                    <div className="text-muted-foreground mt-0.5 text-xs sm:hidden">
+                                                        {p.type} &middot; {new Date(p.payment_date).toLocaleDateString()}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="hidden sm:table-cell">{p.type}</TableCell>
+                                                <TableCell className="font-mono font-medium">{formatCurrency(p.amount)}</TableCell>
+                                                <TableCell className="hidden md:table-cell">{paymentMethodLabel(p.method)}</TableCell>
+                                                <TableCell className="hidden sm:table-cell">{new Date(p.payment_date).toLocaleDateString()}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
                         ) : (
                             <div className="py-12 text-center">
                                 <CreditCard className="text-muted-foreground mx-auto h-12 w-12" />

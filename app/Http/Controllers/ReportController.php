@@ -111,7 +111,7 @@ class ReportController extends Controller
         $pdf = Pdf::loadView('reports.financial', compact(
             'title', 'periodLabel', 'totalCollected', 'totalPayments', 'pendingAmount',
             'byType', 'byMethod', 'payments', 'unpaidMembers'
-        ))->setPaper('a4', 'landscape');
+        ))->setPaper('a4', 'portrait');
 
         $filename = 'financial-report-' . strtolower(str_replace(' ', '-', $periodLabel)) . '.pdf';
 
@@ -147,16 +147,93 @@ class ReportController extends Controller
                 'total' => (float) $group->sum('amount'),
             ])->values()->toArray();
 
+        // Outstanding dues
+        $outstandingDues = $this->calculateOutstandingDues($member, $paidPayments);
+        $totalOutstanding = collect($outstandingDues)->sum('amount');
+
         $title = "Member Report — {$member->member_id} — {$member->full_name}";
 
         $pdf = Pdf::loadView('reports.member', compact(
             'title', 'member', 'payments', 'totalPayments', 'totalPaid',
-            'pendingCount', 'pendingAmount', 'byType'
-        ))->setPaper('a4', 'landscape');
+            'pendingCount', 'pendingAmount', 'byType', 'outstandingDues', 'totalOutstanding'
+        ))->setPaper('a4', 'portrait');
 
         $filename = 'member-report-' . strtolower($member->member_id) . '.pdf';
 
         return $pdf->download($filename);
+    }
+
+    /**
+     * Calculate all outstanding (unpaid) dues for a member.
+     */
+    private function calculateOutstandingDues(Member $member, $paidPayments): array
+    {
+        $paymentTypes = PaymentType::where('is_active', true)->get();
+        $outstandingDues = [];
+
+        foreach ($paymentTypes as $type) {
+            if ($type->billing_cycle === 'monthly') {
+                $startDate = $member->joined_at->copy()->startOfMonth();
+                $endDate   = now()->startOfMonth();
+                $current   = $startDate->copy();
+
+                while ($current->lte($endDate)) {
+                    $billingPeriod = $current->format('Y-m');
+
+                    $isPaid = $paidPayments
+                        ->where('payment_type_id', $type->id)
+                        ->where('billing_period', $billingPeriod)
+                        ->isNotEmpty();
+
+                    if (!$isPaid) {
+                        $outstandingDues[] = [
+                            'payment_type_name'    => $type->name,
+                            'billing_cycle'        => 'Monthly',
+                            'amount'               => (float) $type->amount,
+                            'billing_period_label' => $current->format('M Y'),
+                        ];
+                    }
+
+                    $current->addMonth();
+                }
+            } elseif ($type->billing_cycle === 'yearly') {
+                $startYear = (int) $member->joined_at->format('Y');
+                $endYear   = (int) now()->format('Y');
+
+                for ($year = $startYear; $year <= $endYear; $year++) {
+                    $billingPeriod = (string) $year;
+
+                    $isPaid = $paidPayments
+                        ->where('payment_type_id', $type->id)
+                        ->where('billing_period', $billingPeriod)
+                        ->isNotEmpty();
+
+                    if (!$isPaid) {
+                        $outstandingDues[] = [
+                            'payment_type_name'    => $type->name,
+                            'billing_cycle'        => 'Yearly',
+                            'amount'               => (float) $type->amount,
+                            'billing_period_label' => $billingPeriod,
+                        ];
+                    }
+                }
+            } elseif ($type->billing_cycle === 'one_time') {
+                $isPaid = $paidPayments
+                    ->where('payment_type_id', $type->id)
+                    ->isNotEmpty();
+
+                if (!$isPaid) {
+                    $outstandingDues[] = [
+                        'payment_type_name'    => $type->name,
+                        'billing_cycle'        => 'One-time',
+                        'amount'               => (float) $type->amount,
+                        'billing_period_label' => 'One-time',
+                    ];
+                }
+            }
+        }
+
+        return $outstandingDues;
     }
 
     /**
@@ -186,7 +263,7 @@ class ReportController extends Controller
         $pdf = Pdf::loadView('reports.officials', compact(
             'title', 'officers', 'regularMembers', 'positionLabels',
             'totalMembers', 'officerCount', 'regularCount'
-        ))->setPaper('a4', 'landscape');
+        ))->setPaper('a4', 'portrait');
 
         return $pdf->download('officials-members-directory.pdf');
     }
@@ -262,7 +339,7 @@ class ReportController extends Controller
         $pdf = Pdf::loadView('reports.transaction', compact(
             'title', 'periodLabel', 'totalIn', 'totalOut', 'netBalance',
             'totalCount', 'byCategory', 'byType', 'transactions'
-        ))->setPaper('a4', 'landscape');
+        ))->setPaper('a4', 'portrait');
 
         $filename = 'transaction-report-' . strtolower(str_replace(' ', '-', $periodLabel)) . '.pdf';
 

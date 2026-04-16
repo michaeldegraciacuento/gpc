@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Member;
+use App\Models\PaymentType;
 use App\Models\PositionHistory;
 use App\Traits\LogsActivity;
 use Illuminate\Http\RedirectResponse;
@@ -128,11 +129,100 @@ class MemberController extends Controller
                 'term_year' => $h->term_year,
             ]);
 
+        // Outstanding dues calculation
+        $outstandingDues = $this->calculateOutstandingDues($member);
+
         return Inertia::render('members/Show', [
             'member'          => $member,
             'totalPaid'       => $totalPaid,
             'positionHistory' => $positionHistory,
+            'outstandingDues' => $outstandingDues,
         ]);
+    }
+
+    /**
+     * Calculate all outstanding (unpaid) dues for a member.
+     */
+    private function calculateOutstandingDues(Member $member): array
+    {
+        $paymentTypes = PaymentType::where('is_active', true)->get();
+        $outstandingDues = [];
+
+        // Payments already made (paid status) grouped by type
+        $paidPayments = $member->payments->where('status', 'paid');
+
+        foreach ($paymentTypes as $type) {
+            if ($type->billing_cycle === 'monthly') {
+                // Generate months from join date to current month
+                $startDate = $member->joined_at->copy()->startOfMonth();
+                $endDate   = now()->startOfMonth();
+                $current   = $startDate->copy();
+
+                while ($current->lte($endDate)) {
+                    $billingPeriod = $current->format('Y-m');
+
+                    $isPaid = $paidPayments
+                        ->where('payment_type_id', $type->id)
+                        ->where('billing_period', $billingPeriod)
+                        ->isNotEmpty();
+
+                    if (!$isPaid) {
+                        $outstandingDues[] = [
+                            'payment_type_id'   => $type->id,
+                            'payment_type_name' => $type->name,
+                            'billing_cycle'     => $type->billing_cycle,
+                            'amount'            => (float) $type->amount,
+                            'billing_period'       => $billingPeriod,
+                            'billing_period_label' => $current->format('F Y'),
+                        ];
+                    }
+
+                    $current->addMonth();
+                }
+            } elseif ($type->billing_cycle === 'yearly') {
+                // Generate years from join year to current year
+                $startYear = (int) $member->joined_at->format('Y');
+                $endYear   = (int) now()->format('Y');
+
+                for ($year = $startYear; $year <= $endYear; $year++) {
+                    $billingPeriod = (string) $year;
+
+                    $isPaid = $paidPayments
+                        ->where('payment_type_id', $type->id)
+                        ->where('billing_period', $billingPeriod)
+                        ->isNotEmpty();
+
+                    if (!$isPaid) {
+                        $outstandingDues[] = [
+                            'payment_type_id'   => $type->id,
+                            'payment_type_name' => $type->name,
+                            'billing_cycle'     => $type->billing_cycle,
+                            'amount'            => (float) $type->amount,
+                            'billing_period'       => $billingPeriod,
+                            'billing_period_label' => $billingPeriod,
+                        ];
+                    }
+                }
+            } elseif ($type->billing_cycle === 'one_time') {
+                // One-time: unpaid if no paid record exists at all
+                $isPaid = $paidPayments
+                    ->where('payment_type_id', $type->id)
+                    ->isNotEmpty();
+
+                if (!$isPaid) {
+                    $outstandingDues[] = [
+                        'payment_type_id'   => $type->id,
+                        'payment_type_name' => $type->name,
+                        'billing_cycle'     => $type->billing_cycle,
+                        'amount'            => (float) $type->amount,
+                        'billing_period'       => null,
+                        'billing_period_label' => 'One-time',
+                    ];
+                }
+            }
+        }
+
+        return $outstandingDues;
     }
 
     public function edit(Member $member): Response

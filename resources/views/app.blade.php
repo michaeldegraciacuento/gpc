@@ -36,6 +36,13 @@
         <link rel="icon" type="image/png" href="{{ asset('/image/gpc.png') }}">
         <link rel="shortcut icon" type="image/png" href="{{ asset('/image/gpc.png') }}">
 
+        <!-- Open Graph Meta Tags -->
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="{{ url('/') }}">
+        <meta property="og:title" content="{{ config('app.name', 'Gitagum Pickleball Club') }}">
+        <meta property="og:description" content="Official website of Gitagum Pickleball Club — join, play, and connect with the community.">
+        <meta property="og:image" content="{{ asset('/image/gpc.png') }}">
+
         @routes
         @viteReactRefresh
         @vite(['resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])

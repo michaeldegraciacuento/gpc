@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowDownLeft, ArrowLeft, ArrowUpRight, Edit, Trash2 } from 'lucide-react';
+import { ArrowDownLeft, ArrowLeft, ArrowUpRight, Edit, ImageIcon, Trash2 } from 'lucide-react';
 
 interface Transaction {
     id: number;
@@ -13,6 +13,7 @@ interface Transaction {
     description: string | null;
     amount: string;
     transaction_date: string;
+    receipt_image: string | null;
     payment_id: number | null;
     member_id: number | null;
     member: { id: number; member_id: string; full_name: string } | null;
@@ -145,6 +146,32 @@ export default function TransactionsShow({ transaction }: Props) {
                             </dl>
                         </CardContent>
                     </Card>
+
+                    {/* Receipt / Invoice Image */}
+                    {transaction.receipt_image && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <ImageIcon className="h-5 w-5" />
+                                    Receipt / Invoice
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <a
+                                    href={`/storage/${transaction.receipt_image}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <img
+                                        src={`/storage/${transaction.receipt_image}`}
+                                        alt="Receipt / Invoice"
+                                        className="max-h-96 w-auto rounded-lg border object-contain transition-opacity hover:opacity-80"
+                                    />
+                                </a>
+                                <p className="mt-2 text-xs text-muted-foreground">Click image to view full size</p>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
             </div>
         </AppLayout>

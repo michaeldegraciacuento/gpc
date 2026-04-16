@@ -5,8 +5,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowDownLeft, ArrowLeft, ArrowUpRight } from 'lucide-react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
+import { ArrowDownLeft, ArrowLeft, ArrowUpRight, ImagePlus, X } from 'lucide-react';
+import { useState } from 'react';
 
 interface Transaction {
     id: number;
@@ -15,6 +16,7 @@ interface Transaction {
     description: string | null;
     amount: string;
     transaction_date: string;
+    receipt_image: string | null;
 }
 
 interface Props {
@@ -30,13 +32,19 @@ export default function TransactionsEdit({ transaction, categoriesIn, categories
         { title: 'Edit', href: `/transactions/${transaction.id}/edit` },
     ];
 
-    const { data, setData, put, processing, errors } = useForm({
+    const { data, setData, processing, errors } = useForm({
         type: transaction.type,
         category: transaction.category,
         description: transaction.description || '',
         amount: transaction.amount,
         transaction_date: transaction.transaction_date.split('T')[0],
+        receipt_image: null as File | null,
+        remove_receipt_image: false,
     });
+
+    const [imagePreview, setImagePreview] = useState<string | null>(
+        transaction.receipt_image ? `/storage/${transaction.receipt_image}` : null,
+    );
 
     const categories = data.type === 'in' ? categoriesIn : categoriesOut;
 
@@ -49,9 +57,31 @@ export default function TransactionsEdit({ transaction, categoriesIn, categories
         }));
     };
 
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0] || null;
+        setData((prev) => ({ ...prev, receipt_image: file, remove_receipt_image: false }));
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => setImagePreview(ev.target?.result as string);
+            reader.readAsDataURL(file);
+        } else {
+            setImagePreview(null);
+        }
+    };
+
+    const removeImage = () => {
+        setData((prev) => ({ ...prev, receipt_image: null, remove_receipt_image: true }));
+        setImagePreview(null);
+    };
+
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(`/transactions/${transaction.id}`);
+        router.post(`/transactions/${transaction.id}`, {
+            ...data,
+            _method: 'put',
+        }, {
+            forceFormData: true,
+        });
     };
 
     return (
@@ -177,6 +207,43 @@ export default function TransactionsEdit({ transaction, categoriesIn, categories
                                     />
                                     {errors.transaction_date && <p className="text-sm text-destructive">{errors.transaction_date}</p>}
                                 </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="receipt_image">Receipt / Invoice Image</Label>
+                                {imagePreview ? (
+                                    <div className="relative inline-block">
+                                        <img
+                                            src={imagePreview}
+                                            alt="Receipt preview"
+                                            className="h-48 w-auto rounded-lg border object-contain"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={removeImage}
+                                            className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-white shadow-sm hover:bg-destructive/90"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <label
+                                        htmlFor="receipt_image"
+                                        className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 p-6 transition-colors hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500"
+                                    >
+                                        <ImagePlus className="mb-2 h-8 w-8 text-muted-foreground" />
+                                        <span className="text-sm font-medium text-muted-foreground">Click to upload receipt image</span>
+                                        <span className="mt-1 text-xs text-muted-foreground">JPG, PNG or WebP (max 5MB)</span>
+                                    </label>
+                                )}
+                                <Input
+                                    id="receipt_image"
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    className="hidden"
+                                    onChange={handleImageChange}
+                                />
+                                {errors.receipt_image && <p className="text-sm text-destructive">{errors.receipt_image}</p>}
+                            </div>
                         </CardContent>
                     </Card>
 

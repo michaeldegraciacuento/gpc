@@ -136,7 +136,7 @@ Route::middleware(['auth', 'verified', 'mfa.login'])->group(function () {
     Route::middleware(['permission:payments.edit'])->group(function () {
         Route::get('transactions/{transaction}/edit', [TransactionController::class, 'edit'])
              ->name('transactions.edit');
-        Route::match(['put', 'patch'], 'transactions/{transaction}', [TransactionController::class, 'update'])
+        Route::match(['put', 'patch', 'post'], 'transactions/{transaction}', [TransactionController::class, 'update'])
              ->name('transactions.update');
     });
 

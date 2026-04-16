@@ -6,6 +6,7 @@ use App\Models\Transaction;
 use App\Traits\LogsActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -73,7 +74,12 @@ class TransactionController extends Controller
             'description' => ['nullable', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'transaction_date' => ['required', 'date'],
+            'receipt_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
+
+        if ($request->hasFile('receipt_image')) {
+            $validated['receipt_image'] = $request->file('receipt_image')->store('transaction-receipts', 'public');
+        }
 
         $validated['recorded_by'] = $request->user()->id;
 
@@ -116,7 +122,23 @@ class TransactionController extends Controller
             'description' => ['nullable', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'transaction_date' => ['required', 'date'],
+            'receipt_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'remove_receipt_image' => ['nullable', 'boolean'],
         ]);
+
+        if ($request->hasFile('receipt_image')) {
+            if ($transaction->receipt_image) {
+                Storage::disk('public')->delete($transaction->receipt_image);
+            }
+            $validated['receipt_image'] = $request->file('receipt_image')->store('transaction-receipts', 'public');
+        } elseif ($request->boolean('remove_receipt_image')) {
+            if ($transaction->receipt_image) {
+                Storage::disk('public')->delete($transaction->receipt_image);
+            }
+            $validated['receipt_image'] = null;
+        }
+
+        unset($validated['remove_receipt_image']);
 
         $transaction->update($validated);
 
@@ -138,6 +160,11 @@ class TransactionController extends Controller
 
         $transactionCopy = $transaction->replicate();
         $transactionCopy->id = $transaction->id;
+
+        if ($transaction->receipt_image) {
+            Storage::disk('public')->delete($transaction->receipt_image);
+        }
+
         $transaction->delete();
 
         $this->logActivity('transaction_deleted', $transactionCopy, $desc);

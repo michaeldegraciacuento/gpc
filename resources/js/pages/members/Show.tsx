@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Calendar, CreditCard, Edit, Mail, MapPin, Phone, Plus, Trash2, User } from 'lucide-react';
+import { ArrowLeft, Calendar, AlertCircle, CreditCard, Edit, Mail, MapPin, Phone, Plus, Trash2, User } from 'lucide-react';
 import { useState } from 'react';
 
 interface PaymentRecord {
@@ -45,6 +45,15 @@ interface Member {
     payments: PaymentRecord[];
 }
 
+interface OutstandingDue {
+    payment_type_id: number;
+    payment_type_name: string;
+    billing_cycle: string;
+    amount: number;
+    billing_period: string | null;
+    billing_period_label: string;
+}
+
 interface PositionHistoryRecord {
     position: string;
     term_year: number;
@@ -54,6 +63,7 @@ interface Props {
     member: Member;
     totalPaid: number;
     positionHistory: PositionHistoryRecord[];
+    outstandingDues: OutstandingDue[];
 }
 
 const statusVariant = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
@@ -95,7 +105,16 @@ const POSITION_LABELS: Record<string, string> = {
     member: 'Member',
 };
 
-export default function MembersShow({ member, totalPaid, positionHistory }: Props) {
+const billingCycleLabel = (cycle: string) => {
+    const labels: Record<string, string> = {
+        monthly: 'Monthly',
+        yearly: 'Yearly',
+        one_time: 'One-time',
+    };
+    return labels[cycle] || cycle;
+};
+
+export default function MembersShow({ member, totalPaid, positionHistory, outstandingDues }: Props) {
     const [deletingId, setDeletingId] = useState<number | null>(null);
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -314,6 +333,63 @@ export default function MembersShow({ member, totalPaid, positionHistory }: Prop
                         )}
                     </div>
                 </div>
+
+                {/* Outstanding Dues */}
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center gap-2">
+                            <AlertCircle className={`h-5 w-5 ${outstandingDues.length > 0 ? 'text-destructive' : 'text-green-500'}`} />
+                            <div>
+                                <CardTitle>Outstanding Dues</CardTitle>
+                                <CardDescription>
+                                    {outstandingDues.length > 0
+                                        ? `${outstandingDues.length} unpaid item${outstandingDues.length > 1 ? 's' : ''} — ${formatCurrency(outstandingDues.reduce((sum, d) => sum + d.amount, 0))} total balance`
+                                        : 'All dues are paid up!'}
+                                </CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        {outstandingDues.length > 0 ? (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Due Type</TableHead>
+                                        <TableHead>Billing Cycle</TableHead>
+                                        <TableHead>Period</TableHead>
+                                        <TableHead>Amount</TableHead>
+                                        <TableHead>Status</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {outstandingDues.map((due, index) => (
+                                        <TableRow key={`${due.payment_type_id}-${due.billing_period ?? index}`}>
+                                            <TableCell className="font-medium">{due.payment_type_name}</TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline" className="capitalize">
+                                                    {billingCycleLabel(due.billing_cycle)}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-muted-foreground">{due.billing_period_label}</TableCell>
+                                            <TableCell className="font-mono">{formatCurrency(due.amount)}</TableCell>
+                                            <TableCell>
+                                                <Badge variant="destructive">Unpaid</Badge>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                            <div className="py-6 text-center">
+                                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+                                    <CreditCard className="h-6 w-6 text-green-600 dark:text-green-400" />
+                                </div>
+                                <h3 className="mt-2 text-sm font-semibold">All caught up!</h3>
+                                <p className="text-muted-foreground mt-1 text-sm">This member has no outstanding dues.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
 
                 {/* Payment History */}
                 <Card>
